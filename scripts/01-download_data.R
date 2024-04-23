@@ -4,7 +4,7 @@
 # Date: 23 April 2024
 # Contact: kuiyao.qiao@mail.utoronto.ca
 # License: MIT
-# Pre-requisites: None
+# Pre-requisites: R
 
 
 #### Workspace setup ####
