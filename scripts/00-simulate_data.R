@@ -1,28 +1,31 @@
 #### Preamble ####
-# Purpose: Simulates... [...UPDATE THIS...]
+# Purpose: Simulates different Major Crimes in a decade
 # Author: Kuiyao Qiao
 # Date: 28 March 2024
 # Contact: kuiyao.qiao@mail.utoronto.ca
 # License: MIT
-# Pre-requisites: [...UPDATE THIS...]
-# Any other information needed? [...UPDATE THIS...]
+# Pre-requisites: R
 
 
 #### Workspace setup ####
 library(tidyverse)
-# [...UPDATE THIS...]
 
 #### Simulate data ####
-simulate_data <- 
-  tibble(
-    certainty = floor(runif(n = 1000, min = 0, max = 11)),
-    guessed_correct = floor(runif(n = 1000, min = 0, max = 2))
-  )
+## This setup will create a structured tabular dataset where each row represents a case of Major Crime in a given year. The dataset was constructed to reflect what might be seen in the Major Crime Indicators in OPEN DATA, i.e., different Crimes in different years. However, to keep the data streamlined, the number has been reduced.
 
-max(simulated_data$certainty) ==10
-min(simulated_data$certainty) ==0
-unique(simulated_data$certainty) == c(0:1)
+set.seed(1688)  # For reproducibility
 
-max(simulate_data$certainty) == 10
-min(simulate_data$certainty) == 0
-setequal(unique(simulate_data$certainty), 0:10)
+# Create a tibble
+simulated_data <- tibble(
+  id = 1:1000,  # IDs from 1 to 1000
+  year = sample(2014:2024, 1000, replace = TRUE),  # Random years between 2014 and 2024
+  MCI_CATEGORY = sample(
+    c("Assault", "Break and Enter", "Auto Theft", "Theft Over", "Robbery"),
+    1000,
+    replace = TRUE
+  )  # Randomly assigning categories
+)
+
+# Arrange the data by id and then by year, both in ascending order
+ordered_data <- simulated_data %>%
+  arrange(id, year)
