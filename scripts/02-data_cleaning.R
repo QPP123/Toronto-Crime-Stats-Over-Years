@@ -1,45 +1,31 @@
 #### Preamble ####
-# Purpose: Cleans the raw plane data recorded by two observers..... [...UPDATE THIS...]
-# Author: Rohan Alexander [...UPDATE THIS...]
-# Date: 6 April 2023 [...UPDATE THIS...]
-# Contact: rohan.alexander@utoronto.ca [...UPDATE THIS...]
+# Purpose: Cleans the raw data from City of Toronto Open Data and remove useless information
+# Author: Kuiyao Qiao
+# Date: 23 April 2024
+# Contact: kuiyao.qiao@mail.utoronto.ca
 # License: MIT
-# Pre-requisites: [...UPDATE THIS...]
-# Any other information needed? [...UPDATE THIS...]
+# Pre-requisites: R 4.3.2, major-crime-indicators.csv
 
 #### Workspace setup ####
-library(tidyverse)
-library()
+library(dplyr)
+library(readr)
 
 #### Clean data ####
-raw_data <- read_csv("inputs/data/plane_data.csv")
+# Load data from the CSV file
+file_path <- "data/raw_data/major-crime-indicators.csv"
+data <- read_csv(file_path)
 
-cleaned_data <-
-  raw_data |>
-  janitor::clean_names() |>
-  select(wing_width_mm, wing_length_mm, flying_time_sec_first_timer) |>
-  filter(wing_width_mm != "caw") |>
-  mutate(
-    flying_time_sec_first_timer = if_else(flying_time_sec_first_timer == "1,35",
-                                   "1.35",
-                                   flying_time_sec_first_timer)
-  ) |>
-  mutate(wing_width_mm = if_else(wing_width_mm == "490",
-                                 "49",
-                                 wing_width_mm)) |>
-  mutate(wing_width_mm = if_else(wing_width_mm == "6",
-                                 "60",
-                                 wing_width_mm)) |>
-  mutate(
-    wing_width_mm = as.numeric(wing_width_mm),
-    wing_length_mm = as.numeric(wing_length_mm),
-    flying_time_sec_first_timer = as.numeric(flying_time_sec_first_timer)
-  ) |>
-  rename(flying_time = flying_time_sec_first_timer,
-         width = wing_width_mm,
-         length = wing_length_mm
-         ) |> 
-  tidyr::drop_na()
+# Remove unwanted columns
+data_cleaned <- select(data,
+                       -EVENT_UNIQUE_ID, -REPORT_DATE, -OCC_DATE, -REPORT_DOW, -OCC_DOW, -LOCATION_TYPE, -NEIGHBOURHOOD_158, -HOOD_140, -NEIGHBOURHOOD_140, -UCR_CODE, -UCR_EXT, -OCC_DOY, -REPORT_HOUR, -OCC_HOUR, -REPORT_DOY, -DIVISION, -HOOD_158)
+
+# Ensure the directory exists
+dir_path <- "data/analysis_data/"
+if (!dir.exists(dir_path)) {
+  dir.create(dir_path, recursive = TRUE)
+}
+
 
 #### Save data ####
-write_parquet(cleaned_data, "outputs/data/analysis_data.csv")
+data_path <- paste0(dir_path, "cleaned_major_crime_data.csv")
+write_csv(data_cleaned, data_path)
