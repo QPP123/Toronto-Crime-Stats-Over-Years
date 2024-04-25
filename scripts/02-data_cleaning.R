@@ -20,9 +20,12 @@ library(arrow)
 file_path <- "data/raw_data/major-crime-indicators.csv"
 data <- read_csv(file_path)
 
+data_path <- "data/raw_data/major-crime-indicators.csv"
+data <- read_csv(data_path)
+
 # Remove unwanted columns
 data_cleaned <- select(data,
-                       -EVENT_UNIQUE_ID, -REPORT_DATE, -OCC_DATE, -REPORT_DOW, -OCC_DOW, -NEIGHBOURHOOD_158, -HOOD_140, -NEIGHBOURHOOD_140, -UCR_CODE, -UCR_EXT, -OCC_DOY, -REPORT_HOUR, -OCC_HOUR, -REPORT_DOY, -DIVISION, -HOOD_158)
+                       -EVENT_UNIQUE_ID, -REPORT_DATE, -OCC_DATE, -REPORT_DOW, -OCC_DOW, -NEIGHBOURHOOD_158, -HOOD_140, -NEIGHBOURHOOD_140, -UCR_CODE, -UCR_EXT, -OCC_DOY, -REPORT_HOUR, -REPORT_DOY, -HOOD_158)
 
 # Ensure the directory exists
 dir_path <- "data/analysis_data/"
