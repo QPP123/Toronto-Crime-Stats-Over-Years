@@ -1,0 +1,373 @@
+---
+title: "A Comprehensive Analysis of Toronto's Major Crime Indicators from 2014 to 2024"
+subtitle: "Data from open data toronto displaying all 2014-2024 Major Crime Indicators from Toronto Police Service"
+author: 
+  - Kuiyao Qiao
+thanks: "Code and data are available at: https://github.com/QPP123/Toronto-Crime-Stats-Over-Years"
+date: today
+date-format: long
+abstract: "This study analyzes a comprehensive dataset of Major Crime Indicators (MCIs) reported in Toronto, Canada, from 2014 to 2024 to identify patterns, trends, and distributions of criminal activity across the city. Using statistical analysis and data visualization techniques, we examine the frequency and characteristics of major crime. Our findings reveal significant temporal and spatial patterns, including an overall increase in crime rates from 2014 to 2019 and a subsequent resurgence in recent years, with assault being the most prevalent crime category. The results highlight the importance of data-driven approaches to understanding urban crime dynamics and inform targeted strategies for law enforcement, resource allocation, and public safety initiatives in large urban centers."
+format: pdf
+toc: true
+number-sections: true
+bibliography: references.bib
+---
+
+```{r}
+#| include: false
+#| warning: false
+#| message: false
+
+library(arrow)
+library(dplyr)
+library(readr)
+library(ggplot2)
+library(rmarkdown)
+library(here)
+library(knitr)
+library(kableExtra)
+library(forcats)
+library(tidyr)
+library(gridExtra)
+library(scales)
+
+file_path <- here("data", "analysis_data", "cleaned_major_crime_data.csv")
+crime_data <- read_csv(file_path)
+```
+
+# Introduction
+
+Crime is a chronic concern in major cities around the world, affecting public safety, quality of life and socio-economic well-being. Effective law enforcement and crime prevention strategies rely on a thorough understanding of crime patterns, trends and distribution across different dimensions such as time, place and type of crime. The City of Toronto is the largest city in Canada, and its Major Crime Indicators (MCIs) data are collected and made publicly available by the Toronto Police Service. This dataset provides insight into the nature and dynamics of criminal activity in a large urban center over an extended period of time.
+
+This paper provides a comprehensive analysis of Toronto's MCI data from 2014 to 2024[@CityToronto2024], covering a decade of reported crimes such as assault, auto theft, burglary, robbery, and theft over $5,000. While previous studies have examined crime patterns in Toronto and other cities, there was a need for an up-to-date, in-depth analysis using the latest data and employing powerful statistical and visualization techniques. Such analysis can reveal emerging trends, seasonal variations, and geographic hotspots that can inform resource allocation, policy decisions, and community engagement efforts aimed at enhancing public safety.
+
+We conducted an extensive exploratory analysis of the MCI dataset, focusing on the frequency, distribution, and temporal patterns of reported crime in the Toronto region. Using the R programming language and various data visualization libraries, the data were cleaned and processed to generate summary statistics and produce informative tables, charts, and maps. The results of the study reveal some clear trends, such as an overall increase in reported crime from 2014 to 2019, a possible sharp decline in 2020 due to the COVID-19 pandemic, and a rebound in crime in recent years. Assault was also identified as the most prevalent crime category, with peak crime times in the evening and at night, specific site types, and police zoning districts with higher concentrations of crime.
+
+The insights derived from this analysis have important implications for law enforcement strategies, resource allocation and public safety initiatives in Toronto. By understanding temporal and spatial patterns of crime, authorities can develop targeted interventions, community policing efforts and crime prevention programs.
+
+The data in this post was compiled using the open source statistical programming language R [@citeR], library arrow[@R-arrow], dplyr[@dplyr], readr[@readr], ggplot2[@ggplot2], rmarkdown[@R-rmarkdown], here[@here], knitr[@knitr], kableExtra[@kableExtra], forcats[@R-forcats], tidyr[@R-tidyr], gridExtra[@R-gridExtra] and scales[@R-scales]to clean up.
+
+# Data
+
+## Source Data
+
+The "Major Crime Indicators" dataset was obtained from the City of Toronto Open Data Portal, a publicly accessible data portal provided by the City of Toronto. The data is collected and maintained by the Toronto Police Service (TPS). The TPS compilation of reported major crime incidents covers reported major crime incidents within the City of Toronto categorized as assaults, break-ins, auto thefts, robberies, and thefts over \$5,000 (excluding sexual assaults). The data is provided at the crime level, meaning that one incident may have multiple associated rows, depending on the MCIs used to categorize the incident. The purpose of the data is to provide an accessible and transparent view of crime trends in the city to inform public safety strategies and community awareness.
+
+## Data overview
+
+This dataset contains Toronto Major Crime Incident (MCI) reports from 2014 to 2024, including detailed records of more than 384,000 crime incidents, with 2024 data available as of March 31st. Each record contains data fields for the year, month, day, and hour the crime was reported and occurred, the police precinct, location type, and premises type involved in the crime, and the specific category of MCI. The data includes the following key variables:
+
+REPORT_YEAR, REPORT_MONTH, REPORT_DAY: time the crime was reported
+
+OCC_YEAR, OCC_MONTH, OCC_DAY, OCC_HOUR: time of the crime
+
+LOCATION_TYPE, PREMISES_TYPE: nature of the place where the crime occurred
+
+MCI_CATEGORY: the Major Crime Indicator (MCI) category of the offence
+
+DIVISION: police precinct where the crime was reported
+
+These variables can be summarized into three categories:
+
+Time-related variables (REPORT_YEAR, OCC_YEAR, etc.): Numeric.
+
+Location-related variables (DIVISION, LOCATION_TYPE, etc.): Categorical.
+
+Crime type variables (MCI_CATEGORY): Categorical.
+
+OFFENCE could be simplified and divided into five kinds of MCI_CATEGORY.[@tbl-offence-category] [@tbl-MCI-CATEGORY]
+
+```{r}
+#| label: tbl-offence-category
+#| fig-cap: "Distribution of Offences by Major Crime Category"
+#| fig.pos: H
+#| echo: false
+#| warning: false
+#| message: false
+offence_summary <- crime_data %>%
+  group_by(MCI_CATEGORY, OFFENCE) %>%
+  summarise(Count = n(), .groups = 'drop') %>%
+  arrange(MCI_CATEGORY, desc(Count))
+
+kable(offence_summary, caption = "Distribution of Offences by Major Crime Category")
+```
+
+```{r}
+#| label: tbl-MCI-CATEGORY
+#| fig.pos: H
+#| echo: false
+#| warning: false
+#| message: false
+
+mci_summary <- crime_data %>%
+  group_by(MCI_CATEGORY) %>%
+  summarise(Number_of_Crimes = n(), .groups = 'drop') %>%
+  arrange(desc(Number_of_Crimes))
+
+kable(mci_summary, caption = "Number of Crimes for MCI Category", col.names = c("MCI Category", "Number of Crimes"))
+```
+
+PREMISES_TYPE(@tbl-PREMISES-TYPE):,Apartment,Commercial,Educational,House,Other,Outside and Transit.
+
+```{r}
+#| label: tbl-PREMISES-TYPE
+#| fig.pos: H
+#| echo: false
+#| warning: false
+#| message: false
+
+premises_summary <- crime_data %>%
+  group_by(PREMISES_TYPE) %>%
+  summarise(Number_of_Crimes = n(), .groups = 'drop') %>%
+  arrange(desc(Number_of_Crimes))
+
+kable(premises_summary, caption = "Number of Crimes for Premises Type", col.names = c("Premises Type", "Number of Crimes"))
+```
+
+REPORT_YEAR and OCC_YEAR: represent the number of reported crimes from 2014 through 2024, and crimes that occurred from 2013 through 2024.(@tbl-Crime)
+
+```{r}
+#| label: tbl-Crime
+#| fig-subcap: Data for 2024 are available through March 31st.
+#| echo: false
+#| warning: false
+#| message: false
+
+crime_counts_per_year <- table(crime_data$REPORT_YEAR)
+
+years <- as.numeric(names(crime_counts_per_year))
+crime_counts <- as.integer(crime_counts_per_year)
+data_for_table <- data.frame(Year = years, Number_of_Crimes = crime_counts)
+
+kable(data_for_table, caption = "Annual Reported Crimes from 2014 to 2024")
+```
+
+This dataset provides valuable information on the incidence and distribution of significant crimes in Toronto over ten years. The dataset allows for analyzing crime trends, seasonal patterns, and the relationship between crime and location type. This information is helpful for law enforcement resource allocation, crime prevention strategies and public safety policy decisions. 
+
+##Data Limitations
+
+The dataset has some limitations that should be considered when interpreting the results: Unfounded incidents: The data does not include occurrences deemed unfounded through police investigation, meaning that the reported offence did not occur or was not attempted. Location verification: Some incidents may have unverified locations or coordinates outside the City of Toronto. Crime categorization: The MCI categories are broad and may not provide detailed insight into specific types of crimes within each category. Reporting bias: The data only includes reported crimes, which may not represent the true prevalence of crime due to underreporting. Partial data for 2024: The dataset only contains data up to March 31st, 2024, which limits the analysis for that year.
+
+## Data cleaning
+
+During the cleaning process, several steps were undertaken to ensure the dataset's utility for analysis while maintaining the integrity of the original data. Fields that did not contribute to the crime analysis, such as EVENT_UNIQUE_ID, various detailed date fields (REPORT_DATE, OCC_DATE, REPORT_DOY, OCC_DOY), day of the week information, and redundant neighbourhood structure identifiers (HOOD_158, NEIGHBOURHOOD_158, HOOD_140, NEIGHBOURHOOD_140), were removed. This focused on the most impactful and relevant data fields, such as crime type, occurrence time, and location specifics. 
+Handling missing data was a crucial aspect of the cleaning process. The script assessed the presence of null or missing values across critical variables and applied appropriate methods to handle these cases, ensuring no significant loss of data integrity. No imputation was deemed necessary; instead, records with incomplete information critical to the analysis were excluded to preserve the accuracy of crime trend interpretations. No new variables were constructed during the cleaning process, as the emphasis was on analyzing the data in its most straightforward and interpretable form. 
+This approach maintains the authenticity of the reported data, focusing analysis on the core elements provided by the Toronto Police Service. This cleaning protocol streamlined the dataset for effective analysis and ensured that the focus remained sharply on the variables most likely to yield meaningful insights into crime patterns within Toronto.
+
+# Results
+
+The Results section provides an in-depth analysis of the Toronto Police Service's Major Crime Indicators (MCIs) for the ten-year period from 2014 to 2024. The data was scrutinized to identify crime patterns, distribution and trends. Below, we detail these findings through summary statistics, tables, charts and illustrative text.
+
+Annual Number of Reported Crimes and Growth Rate (@tbl-Crime, @tbl-growth-rate, and @fig-Total): The number of reported crimes increased steadily from 2014 to 2019, with a significant decrease in 2020 (-12.32% growth rate), which may be attributed to the COVID-19 pandemic. Subsequently, the number of crimes rises sharply in 2022 and 2023, with growth rates of 18.80% and 18.23%, respectively. Figure 1 visually illustrates this trend, showing a clear upward trajectory in recent years. Note that data for 2024 is only available up to March 31, which explains the lower number of crimes and negative growth rate in that year.
+
+```{r}
+#| label: fig-Total
+#| fig-cap: "Total Reported Crimes Per Year"
+#| fig-subcap: Data for 2024 are available through March 31st.
+#| fig.pos: H
+#| echo: false
+#| warning: false
+#| message: false
+
+crime_counts_per_year <- table(crime_data$REPORT_YEAR)
+
+years <- as.numeric(names(crime_counts_per_year))
+crime_counts <- as.integer(crime_counts_per_year)
+data_for_plotting <- data.frame(years, crime_counts)
+
+ggplot(data_for_plotting, aes(x = years, y = crime_counts)) +
+  geom_line(linetype = "dashed") +
+  geom_point() +  
+  geom_text(aes(label = crime_counts), vjust = -0.5, hjust = 1.0) + # Add text labels for each point
+  scale_x_continuous(breaks = years) + 
+  labs(title = "Annual Trend of Reported Crimes",
+       x = "Year",
+       y = "Number of Crimes") +
+  theme_minimal()
+```
+
+```{r}
+#| label: tbl-growth-rate
+#| fig-cap: "Annual Growth Rate of Crimes"
+#| fig-subcap: Data for 2024 are available through March 31st.
+#| echo: false
+#| warning: false
+#| message: false
+
+crime_counts_per_year <- crime_data %>%
+  group_by(REPORT_YEAR) %>%
+  summarise(Number_of_Crimes = n(), .groups = 'drop')
+
+crime_counts_per_year <- crime_counts_per_year %>%
+  mutate(Growth_Rate = (Number_of_Crimes / lag(Number_of_Crimes) - 1) * 100)
+
+crime_counts_per_year$Growth_Rate[is.na(crime_counts_per_year$Growth_Rate)] <- 0
+
+data_for_table <- data.frame(
+  Year = crime_counts_per_year$REPORT_YEAR,
+  Number_of_Crimes = crime_counts_per_year$Number_of_Crimes,
+  Growth_Rate = crime_counts_per_year$Growth_Rate
+)
+
+kable(data_for_table, caption = "Annual Growth Rate of Reported Crimes from 2014 to 2024")
+```
+
+Monthly Crime Frequency @fig-2014to2023: shows the monthly distribution of crime for 2014, 2017, 2020 and 2023. The data shows a relatively even distribution of crime rates across the months, with a slight increase during the summer months (June through August). This seasonal trend appears to be consistent across the years studied.
+
+```{r}
+#| label: fig-2014to2023
+#| fig-cap: "Monthly Crime Frequencies for 2014"
+#| fig.pos: H
+#| echo: false
+#| warning: false
+#| message: false
+#| out.width: '100%'
+
+filtered_data <- crime_data %>%
+  filter(REPORT_YEAR %in% c(2014, 2017, 2020, 2023)) %>%
+  group_by(REPORT_MONTH, REPORT_YEAR) %>%
+  summarise(n = n()) %>%
+  mutate_at("REPORT_MONTH", ~factor(., levels = c("January", "February", "March", "April", "May", "June",
+                                                        "July", "August", "September", "October", "November", "December")))
+
+ggplot(filtered_data, aes(x = REPORT_MONTH, y = n, fill = REPORT_MONTH)) +
+  geom_col() +  
+  facet_wrap(REPORT_YEAR ~.) +
+  guides(fill = "none") +
+  theme_minimal(base_size = 14) +  
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1),
+        plot.title = element_text(size = 16), 
+        legend.position = "none")
+```
+
+Frequency of crime by time period @fig-Hour: Crime rates were highest between 6 pm and midnight, with the highest rate (7.0%) occurring at 9 pm. The highest rate (7.0%) occurred during the early morning hours (2 am to 1 pm). The frequency of crime is lowest in the early morning hours (2 am2 am to 6 am). This indicates that criminal activity is more likely to occur in the evening and nighttime hours.
+
+```{r}
+#| label: fig-Hour
+#| fig-cap: "Frequency of Crimes by hour of the day"
+#| fig.pos: H
+#| echo: false
+#| warning: false
+#| message: false
+
+hourly_crime_data <- crime_data %>%
+  count(OCC_HOUR) %>%
+  mutate(Percentage = n / sum(n) * 100)
+
+ggplot(hourly_crime_data, aes(x = as.factor(OCC_HOUR), y = n, fill = as.factor(OCC_HOUR))) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = paste0(sprintf("%.1f", Percentage), "%")), vjust = -0.5, size = 2.0) +
+  scale_y_continuous(sec.axis = sec_axis(~ . / max(hourly_crime_data$n) * 100, name = "Percentage")) +
+  labs(title = "Frequency and Percentage of Crimes by Hour of Day",
+       x = "Hour of Day",
+       y = "Number of Crimes") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),legend.position = "none")
+```
+
+Distribution of Crimes by Major Crime Type (@tbl-offence-category and @fig-MCI-Category): The data show that assault was the most common type of crime, accounting for 52.9% of all reported crimes. This was followed by auto theft (18.8%), breaking and entering (15.9%), robbery (9%), and theft over \$5,000 (3.4%). Within the assault category, assault (139,442) and assault with a weapon (34,719) were the most common.
+
+```{r}
+#| label: fig-MCI-Category
+#| fig-cap: "Frequency of Crimes by MCI Category"
+#| fig.pos: H
+#| echo: false
+#| warning: false
+#| message: false
+
+specific_crimes <- c("Assault", "Break and Enter", "Auto Theft", "Theft Over", "Robbery")
+
+crime_summary <- crime_data %>%
+  filter(MCI_CATEGORY %in% specific_crimes) %>%
+  count(MCI_CATEGORY) %>%
+  mutate(Percentage = n / sum(n) * 100) %>%
+  arrange(desc(n))
+
+ggplot(crime_summary, aes(x = MCI_CATEGORY, y = n, fill = MCI_CATEGORY)) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = paste0(round(Percentage, 1), "%")), vjust = -0.5, size = 2.0) +  
+  scale_y_continuous(labels = comma) +  
+  labs(title = "Frequency of Crimes by MCI Category", 
+       x = "MCI Category", 
+       y = "Number of Crimes") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),legend.position = "none")
+```
+
+Number of Crimes by Offense Classification (@tbl-MCI-CATEGORY): This table summarizes the total number of crimes in each major category. The highest number of crimes was assault, with 203,679, while the lowest number was theft, with 12,892.
+
+Number of crimes by type of place (@tbl-PREMISES-TYPE and @fig-Premises-Type): The type of place where the most criminal cases occurred was outdoors (103,168), followed by apartments (90,580) and businesses (76,582). Educational institutions had the lowest number of reported cases, 9,641. @tbl-growth-rate shows the frequency distribution by type of establishment, with apartments (26.82%), commercial properties (23.55%), and residences (18.23%) having the highest incidence of crime.
+
+```{r}
+#| label: fig-Premises-Type
+#| fig-cap: "Frequency of Crimes by Premises Type"
+#| fig.pos: H
+#| echo: false
+#| warning: false
+#| message: false
+
+crime_data$PREMISES_TYPE <- as.factor(crime_data$PREMISES_TYPE)
+
+premises_type_counts <- crime_data %>%
+  count(PREMISES_TYPE, sort = TRUE) %>%
+  mutate(Percentage = n / sum(n))
+
+ggplot(premises_type_counts, aes(x = PREMISES_TYPE, y = n, fill = PREMISES_TYPE)) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = scales::percent(Percentage)), vjust = -0.3, , size = 2.0, hjust = 0.5, color = "black") +  
+  labs(title = "Frequency of Crimes by Premises Type",
+       x = "Premises Type",
+       y = "Frequency") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.position = "none")
+```
+
+Frequency of crime by police Division [@fig-Division]: D14 Precinct had the highest crime rate at 8.2%, followed by D43 Precinct (7.9%) and D51 Precinct (7.3%).D53 Precinct had the lowest crime rate at 1.0%, followed closely by D54 Precinct (1.6%).D54 Precinct had the lowest crime rate at 1.0%, followed closely by D54 Precinct (1.6%).D54 Precinct had the lowest crime rate at 1.0%, followed closely by D54 Precinct (1.6%). This information helps to identify high-crime areas and allocate police resources accordingly.
+
+```{r}
+#| label: fig-Division
+#| fig-cap: "Frequency of Crimes by Division"
+#| fig.pos: H
+#| echo: false
+#| warning: false
+#| message: false
+
+division_crime_data <- crime_data %>%
+  count(DIVISION) %>%
+  mutate(Percentage = n / sum(n) * 100)
+
+ggplot(division_crime_data, aes(x = as.factor(DIVISION), y = n, fill = as.factor(DIVISION))) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = paste0(sprintf("%.1f", Percentage), "%")), vjust = -0.5, size = 2.0) +
+  scale_y_continuous(sec.axis = sec_axis(~ . / max(division_crime_data$n) * 100, name = "Percentage")) +
+  labs(title = "Frequency and Percentage of Crimes by Police Division",
+       x = "Police Division",
+       y = "Number of Crimes") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1),legend.position = "none")
+```
+These results provide valuable insight into the patterns and trends of major crime in Toronto over the past decade. The data and visualizations presented provide a comprehensive overview of crime trends in Toronto, highlighting key aspects such as the increase in crime reports over the years, seasonal variations, peak crime times, and the types of venues most affected. The data emphasize the prevalence of "strikes" and the concentration of crime in specific locations and times. This information can be used to develop crime prevention strategies, resource allocation and public safety initiatives.
+
+# Discussion
+
+## Summary
+In this study, a comprehensive analysis of key crime indicators for Toronto from 2014 to 2024 was conducted using data from the Toronto Police Service. The study analyzes the frequency and distribution of crime across a number of dimensions, including crime type, place type, time and location. The data is visualized through tables, graphs and charts to identify patterns and trends in criminal activity over the past decade.
+
+## Insight into crime patterns:
+A key finding from the analysis is that assault is the most common type of major crime in Toronto, accounting for more than half of all reported incidents. This finding highlights the need for targeted interventions and resources to address violent crime and ensure public safety. Another important revelation is the concentration of crime in specific locations, such as condominiums, commercial properties and outdoor spaces. This knowledge can help law enforcement agencies and policymakers to allocate resources more efficiently and develop location-specific crime prevention strategies.
+
+## Time trends in crime
+The study also revealed temporal patterns of criminal activity in Toronto. The data shows consistent seasonal trends, with slightly higher crime rates during the summer months. In addition, the hourly distribution of crime shows higher rates in the evening and at night, particularly between 6 p.m. and midnight. These findings suggest that crime prevention efforts should be strengthened during these high-risk hours in order to curb criminal activities and improve public safety.
+
+## Limitations and shortcomings
+While this study provides valuable insights into crime patterns in Toronto, its limitations must be recognized. First, the exclusion of unfounded crime reports, while standard in crime data analysis, may underestimate the true number of crime reports. The analysis relies solely on reported crime, which may not provide a comprehensive picture of criminal activity due to underreporting. In addition, the broad categorization of crime types and place types may mask more nuanced patterns within each category. The study also does not consider potential confounding factors, such as socioeconomic conditions or population density, which may influence crime rates in different areas.
+
+##Future directions
+Based on this study, future research could explore the potential factors that contribute to the observed crime patterns. This may require a combination of demographic, socioeconomic, and environmental data to identify potential correlates of criminal activity. Additionally, qualitative research (e.g., interviews with law enforcement officers and community members) could provide valuable contextual information and insight into the drivers of crime in specific locations. Future work could also focus on assessing the effectiveness of existing crime prevention strategies and identifying best practices for reducing crime rates in high-risk areas. Longitudinal studies are necessary to assess the effectiveness of specific crime prevention strategies affected by our findings. Such studies could track the impact of increased police patrols during identified peak crime periods and changes in urban planning on crime rates.
+
+In summary, this study provides a comprehensive overview of key crime indicators in Toronto and identifies major patterns and trends in criminal activity over the past decade. The findings emphasize the importance of a data-driven approach to crime prevention and highlight the need for targeted interventions in high-risk areas and time periods. By exploring the complex factors behind crime patterns on the basis of this research, policymakers and law enforcement agencies can develop more effective strategies to promote public safety and reduce the impact of crime on communities.
+
+\newpage
+
+# References
