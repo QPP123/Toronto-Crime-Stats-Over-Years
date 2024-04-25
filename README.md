@@ -21,4 +21,22 @@ The repo is structured as:
 
 ## Statement on LLM usage
 
-No LLM used
+/other/llm/usage.txt At the time of writing this report, we used ChatGPT 4 also to suggest grammatical and structural corrections to the content of the paper to ensure greater conciseness. ChatGPT was used as well as Claude for diagramming issues and error reporting fixes.
+
+## Access to Open Toronto Data
+Follow these steps to download the Major Crime Indicators (MCI) dataset, which includes data on various crime occurrences reported to the Toronto Police Service.
+
+Step 1: Visit the Dataset Page
+Open your web browser.
+Navigate to the Open Data Toronto portal for the Major Crime Indicators dataset by entering the following URL or clicking on this link: https://open.toronto.ca/dataset/major-crime-indicators/
+
+Step 2: Choose Your File Format
+Scroll down to the Data Files section of the page.
+You will see multiple files available for download, often in formats such as CSV, Excel, or GeoJSON. Decide which format suits your needs:
+CSV
+GeoJSON
+XML
+
+Step 3: Download the Data
+Click on the link for the file format you have chosen. This will either start the download immediately or take you to another page where you can click a download button.
+Save the file to a convenient location on your computer.
